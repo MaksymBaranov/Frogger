@@ -38,7 +38,7 @@ class Player(pygame.sprite.Sprite):
             self.direction = self.direction.normalize()
 
         self.pos += self.direction * self.speed * dt
-        self.rect = (round(self.pos.x), round(self.pos.y))
+        self.rect.center = (round(self.pos.x), round(self.pos.y))
 
     def input(self):
         keys = pygame.key.get_pressed()

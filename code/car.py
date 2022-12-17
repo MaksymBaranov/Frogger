@@ -21,7 +21,7 @@ class Car(pygame.sprite.Sprite):
             self.direction = pygame.math.Vector2(-1, 0)
             self.image = pygame.transform.flip(self.image, True, False)
 
-        self.speed = 300
+        self.speed = 0
 
     def car_choice(self):
         self.car_images = []
