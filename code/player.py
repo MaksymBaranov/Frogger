@@ -1,9 +1,10 @@
 import pygame
+import sys
 from os import walk
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos, groups):
+    def __init__(self, pos, groups, collision_sprites):
         super().__init__(groups)
 
         # Image setup
@@ -17,6 +18,42 @@ class Player(pygame.sprite.Sprite):
         self.pos = pygame.math.Vector2(self.rect.center)
         self.direction = pygame.math.Vector2()
         self.speed = 200
+
+        # Collisions
+        self.collision_sprites = collision_sprites
+        self.hitbox = self.rect.inflate(0, -self.rect.height / 2)
+
+    def collision(self, direction):
+        if direction == 'horizontal':
+            for sprite in self.collision_sprites.sprites():
+                if sprite.hitbox.colliderect(self.hitbox):
+                    if hasattr(sprite, 'name') and sprite.name == 'car':
+                        pygame.quit()
+                        sys.exit()
+
+                    if self.direction.x > 0:  # Moving right
+                        self.hitbox.right = sprite.hitbox.left
+                        self.rect.centerx = self.hitbox.centerx
+                        self.pos.x = self.hitbox.centerx
+                    if self.direction.x < 0:  # Moving right
+                        self.hitbox.left = sprite.hitbox.right
+                        self.rect.centerx = self.hitbox.centerx
+                        self.pos.x = self.hitbox.centerx
+        else:
+            for sprite in self.collision_sprites.sprites():
+                if sprite.hitbox.colliderect(self.hitbox):
+                    if hasattr(sprite, 'name') and sprite.name == 'car':
+                        pygame.quit()
+                        sys.exit()
+
+                    if self.direction.y < 0:  # Moving up
+                        self.hitbox.top = sprite.hitbox.bottom
+                        self.rect.centery = self.hitbox.centery
+                        self.pos.y = self.hitbox.centery
+                    if self.direction.y > 0:  # Moving down
+                        self.hitbox.bottom = sprite.hitbox.top
+                        self.rect.centery = self.hitbox.centery
+                        self.pos.y = self.hitbox.centery
 
     def import_assets(self):
         self.animations = {}
@@ -37,8 +74,17 @@ class Player(pygame.sprite.Sprite):
         if self.direction.magnitude() != 0:
             self.direction = self.direction.normalize()
 
-        self.pos += self.direction * self.speed * dt
-        self.rect.center = (round(self.pos.x), round(self.pos.y))
+        # Horizontal movement + collision
+        self.pos.x += self.direction.x * self.speed * dt
+        self.hitbox.centerx = round(self.pos.x)
+        self.rect.centerx = self.hitbox.centerx
+        self.collision('horizontal')
+
+        # Vertical movement + collision
+        self.pos.y += self.direction.y * self.speed * dt
+        self.hitbox.centery = round(self.pos.y)
+        self.rect.centery = self.hitbox.centery
+        self.collision('vertical')
 
     def input(self):
         keys = pygame.key.get_pressed()
@@ -73,7 +119,22 @@ class Player(pygame.sprite.Sprite):
             self.frame_index = 3
         self.image = current_animation[int(self.frame_index)]
 
+    def restrict(self):
+        if self.rect.left < 640:
+            self.pos.x = 640 + self.rect.width / 2
+            self.hitbox.left = 640
+            self.rect.left = 640
+        if self.rect.right > 2560:
+            self.pos.x = 2560 - self.rect.width / 2
+            self.hitbox.right = 2560
+            self.rect.right = 2560
+        if self.rect.bottom > 3500:
+            self.pos.y = 3500 - self.rect.height / 2
+            self.rect.bottom = 3500
+            self.hitbox.centery = self.rect.centery
+
     def update(self, dt):
         self.input()
         self.move(dt)
         self.animate(dt)
+        self.restrict()
